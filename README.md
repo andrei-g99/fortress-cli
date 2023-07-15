@@ -1,5 +1,5 @@
 # FortressCLI
-File encryption command line tool for unix-based systems written in Rust
+Open source file encryption linux command-line tool using AES-256 with CBC
 
 ```
 FORTRESSNNNdddxXMKdddddOWMNkddddxXW0ddddd0WMMMMMMM
