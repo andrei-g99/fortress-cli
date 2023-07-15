@@ -1,5 +1,5 @@
 # FortressCLI
-Open source file encryption linux command-line tool using AES-256 with CBC
+Open source file encryption linux command-line tool using AES-256 with CBC according to NIST Special Publication 800-38A on "Recommendation for Block Cipher Modes of Operation".
 
 ```
 FORTRESSNNNdddxXMKdddddOWMNkddddxXW0ddddd0WMMMMMMM
