@@ -2,7 +2,7 @@
 File encryption command line tool for unix-based systems written in Rust
 
 ```
-FORTRESSCLIdddxXMKdddddOWMNkddddxXW0ddddd0WMMMMMMM
+FORTRESSNNNdddxXMKdddddOWMNkddddxXW0ddddd0WMMMMMMM
 MMMMMMMMK;.,,''kWd.',,.cNM0,.,,.,OWo.','.lNMMMMMMM
 MMMMMMMMK:';;,'cx:';;;',dkl'';;,'lx;';;;'lNMMMMMMM
 MMMMMMMMK:';;;,',',;;;;,',',;;;;,',,,;;;'lNMMMMMMM
