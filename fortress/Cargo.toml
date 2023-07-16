@@ -9,3 +9,5 @@ authors = ["Andrei Gheorghiu andreigheorghiu99@gmail.com"]
 [dependencies]
 aes = "0.8.3"
 rand = "0.8.5"
+pbkdf2 = "0.12.2"
+sha2 = "0.10.7"
