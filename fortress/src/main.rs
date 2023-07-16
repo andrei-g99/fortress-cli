@@ -8,19 +8,14 @@ use aes::cipher::{
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 
-
-fn main() {
-
-    let mut file = File::open("plaintext.txt").unwrap();
+fn encrypt(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
+{
+    let mut file = File::open(plaintext_path).unwrap();
     let mut o_file = OpenOptions::new()
     .create(true)
     .append(true)
-    .open("ciphertext.bin").unwrap();
+    .open(ciphertext_path).unwrap();
 
-    let key : [u8; 32] = [1, 2, 3, 4, 5, 6, 7, 8,
-                          9, 10, 11, 12, 13, 14, 15, 16,
-                          17, 18, 19, 20, 21, 22, 23, 24,
-                          25, 26, 27, 28, 29, 30, 31, 32];
     let mut rng = thread_rng();
 
     let mut buffer: [u8; 16] = [0; 16];
@@ -28,7 +23,7 @@ fn main() {
     rng.fill(&mut rand_iv);
 
     let IV: [u8; 16] = rand_iv;
-    println!("IV: {:?}", &IV);////////////////////////////
+ 
     let mut prev_block: [u8; 16] = [0; 16];
 
     let mut init = false;
@@ -127,27 +122,17 @@ fn main() {
         }
 
     }
+}
 
 
-    // let mut binary = read_file_as_vec("plaintext.txt").unwrap();
-    // let nr_blocks : usize = calc_block_nr(&binary.len());
-    // let file_blocks : Vec<[u8; 16]> = Vec::new();
+fn main() {
+    let ciphertext: &str = "ciphertext.bin";
+    let plaintext: &str = "plaintext.txt";
+    let key : [u8; 32] = [1, 2, 3, 4, 5, 6, 7, 8,
+    9, 10, 11, 12, 13, 14, 15, 16,
+    17, 18, 19, 20, 21, 22, 23, 24,
+    25, 26, 27, 28, 29, 30, 31, 32];
 
-    // println!("file byte size: {}, file blocks needed: {}", &binary.len(),&nr_blocks);
-    //println!("{:?}", &binary);
-    // let mut rng = thread_rng();
-    // let mut data: [u8; 16] = [87, 237, 149, 99, 133, 145, 233, 157, 181, 115, 244, 162, 48, 2, 228, 91];
-    // let key : [u8; 32] = [1, 2, 3, 4, 5, 6, 7, 8,
-    //                       9, 10, 11, 12, 13, 14, 15, 16,
-    //                       17, 18, 19, 20, 21, 22, 23, 24,
-    //                       25, 26, 27, 28, 29, 30, 31, 32];
-    // //rng.fill(&mut data);
-    // //println!("{:?}", &data);
-    // let mut block = GenericArray::from(data.clone());
-    // let cipher = Aes256::new(&GenericArray::from(key.clone()));
-    // let data_copy = data.clone();
-    // println!("{:?}", &block);
-    // cipher.encrypt_block(&mut block);
-    // println!("{:?}", &block);
+    encrypt(plaintext, ciphertext, key);
 
 }
