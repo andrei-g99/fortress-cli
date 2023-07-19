@@ -1,10 +1,10 @@
 use aes::Aes256;
 use rand::{Rng, thread_rng};
 use aes::cipher::{
-    BlockCipher, BlockEncrypt, BlockDecrypt, KeyInit,
+    BlockEncrypt, BlockDecrypt, KeyInit,
     generic_array::GenericArray,
 };
-use std::fs::{File, OpenOptions, self};
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Write, SeekFrom, Seek};
 
 pub fn encrypt(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
@@ -48,7 +48,7 @@ pub fn encrypt(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
         else if bytes_read < 16
         {//last block
 
-            let slice : &[u8] = &buffer[0..bytes_read];
+            //let slice : &[u8] = &buffer[0..bytes_read];
             for index in bytes_read..16 {
                 //pad with 0u bytes
                 buffer[index] = 0;
