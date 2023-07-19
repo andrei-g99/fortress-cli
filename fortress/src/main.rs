@@ -4,10 +4,14 @@ use hmac::Hmac;
 use sha2::Sha256;
 use std::env;
 
-fn is_valid_string(input: &str) -> bool {
-    if input.len() > 32 {
-        return false;
+fn is_valid_string(input: &str, passphrase_flag: bool) -> bool {
+    if passphrase_flag == true
+    {
+        if input.len() > 32 {
+            return false;
+        }
     }
+
 
     for ch in input.chars() {
         if !ch.is_ascii() || ch.is_whitespace() {
@@ -26,7 +30,7 @@ fn main() {
         println!("Please provide the required input. (4 parameters) e.g. <encrypt/decrypt> <plaintext_filename.format> <cipher_filename.format> <passphrase>");
         return;
     }
-    if is_valid_string(&args[2]) && is_valid_string(&args[3]) && is_valid_string(&args[4])
+    if is_valid_string(&args[2], false) && is_valid_string(&args[3], false) && is_valid_string(&args[4], true)
     {
         if args[1] == "encrypt"
         {
