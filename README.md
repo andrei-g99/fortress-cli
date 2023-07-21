@@ -14,3 +14,9 @@ Features to be implemented:
 5. Parallel processing
 6. Automated tests
 7. Examples and docs
+
+# Possible features
+1. Steganography support
+2. Time based encryption (give users the option to specify a time window in which the file can be decrypted)
+3. Hardware acceleration
+4. Biometric key generation
