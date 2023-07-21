@@ -7,7 +7,126 @@ use aes::cipher::{
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write, SeekFrom, Seek};
 
-pub fn encrypt(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
+fn encrypt_block(prev_block: &mut [u8; 16], iv: &[u8; 16], bytes_read: usize, buffer: &mut [u8; 16], o_file: &mut File,key: &[u8; 32], last_block: bool,init: &mut bool)
+{
+    if last_block
+    {
+                    //let slice : &[u8] = &buffer[0..bytes_read];
+                    for index in bytes_read..16 {
+                        //pad with 0u bytes
+                        buffer[index] = 0;
+                    }
+        
+                    let mut xor_result: [u8; 16] = [0; 16];
+                    if *init == true
+                    {
+                        for (i, (&a, &b)) in buffer.iter().zip(prev_block.iter()).enumerate() {
+                            xor_result[i] = a ^ b;
+                        }
+                    }
+                    else
+                    {
+                        for (i, (&a, &b)) in buffer.iter().zip(iv.iter()).enumerate() {
+                            xor_result[i] = a ^ b;
+                        }
+                        *init = true;
+                    }
+
+                    //Encrypt xor_result
+                    let mut block = GenericArray::from(xor_result.clone());
+                    let cipher = Aes256::new(&GenericArray::from(key.clone()));
+                    cipher.encrypt_block(&mut block);
+                    let u8_array: &[u8] = block.as_slice();
+                    //append to file
+                    o_file.write_all(u8_array).unwrap();
+                    //append one byte specifying how many padded bytes are present in the last block (from 0 to 15)
+                    let u8_bytes_read : u8 = bytes_read.try_into().unwrap();
+                    let padding_byte: u8 = 16 - u8_bytes_read;
+                    let slice: &[u8] = std::slice::from_ref(&padding_byte);
+                    o_file.write_all(slice).unwrap();
+
+    }else
+    {
+            let mut xor_result: [u8; 16] = [0; 16];
+            if *init == true
+            {
+                for (i, (&a, &b)) in buffer.iter().zip(prev_block.iter()).enumerate() {
+                    xor_result[i] = a ^ b;
+                }
+            }else
+            {
+                for (i, (&a, &b)) in buffer.iter().zip(iv.iter()).enumerate() {
+                    xor_result[i] = a ^ b;
+                }
+                *init = true;             
+            }
+
+                //Encrypt xor_result
+                let mut block = GenericArray::from(xor_result.clone());
+                let cipher = Aes256::new(&GenericArray::from(key.clone()));
+                cipher.encrypt_block(&mut block);
+                //set prev_block for next rounds
+                let u8_array: &[u8] = block.as_slice();
+                prev_block.copy_from_slice(u8_array);
+                //append to file
+                o_file.write_all(u8_array).unwrap();
+                    
+    }
+
+}
+
+fn decrypt_block(prev_block: &mut [u8; 16], iv: &[u8; 16], buffer: &mut [u8; 16], o_file: &mut File,key: &[u8; 32],init: &mut bool, file_size: u64, total_bytes_read: i32)
+{
+    if *init == false
+    {
+        //initial block
+        let mut xor_result: [u8; 16] = [0; 16];
+        //Decrypt ciphertext block 1
+        let mut block = GenericArray::from(buffer.clone());
+        let cipher = Aes256::new(&GenericArray::from(key.clone()));
+        cipher.decrypt_block(&mut block);
+        let mut decrypted_block : [u8; 16] = [0; 16];
+        decrypted_block.copy_from_slice(block.as_slice());
+        
+        for (i, (&a, &b)) in decrypted_block.iter().zip(iv.iter()).enumerate() {
+            xor_result[i] = a ^ b;
+        }
+        //set prev_block for next rounds
+        let u8_array: &[u8] = buffer.as_slice();
+        prev_block.copy_from_slice(u8_array);
+        //append to file
+        o_file.write_all(&xor_result[..]).unwrap();
+        
+        *init = true;
+    }
+    else 
+    {
+        if (file_size as i32) - total_bytes_read > 1
+        {
+        //normal block
+        let mut xor_result: [u8; 16] = [0; 16];
+        //Decrypt ciphertext block 1
+        let mut block = GenericArray::from(buffer.clone());
+        let cipher = Aes256::new(&GenericArray::from(key.clone()));
+        cipher.decrypt_block(&mut block);
+        let mut decrypted_block : [u8; 16] = [0; 16];
+        decrypted_block.copy_from_slice(block.as_slice());
+        
+        for (i, (&a, &b)) in decrypted_block.iter().zip(prev_block.iter()).enumerate() {
+            xor_result[i] = a ^ b;
+        }
+        //set prev_block for next rounds
+        let u8_array: &[u8] = buffer.as_slice();
+        prev_block.copy_from_slice(u8_array);
+        //append to file
+        o_file.write_all(&xor_result[..]).unwrap();
+
+        }
+        
+    }
+}
+
+pub fn encrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
 {
     let mut file = File::open(plaintext_path).unwrap();
     let mut o_file = OpenOptions::new()
@@ -46,84 +165,19 @@ pub fn encrypt(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
             break;
         }
         else if bytes_read < 16
-        {//last block
-
-            //let slice : &[u8] = &buffer[0..bytes_read];
-            for index in bytes_read..16 {
-                //pad with 0u bytes
-                buffer[index] = 0;
-            }
-
+        {
             last_block_encountered = true;
-            let mut xor_result: [u8; 16] = [0; 16];
-            
-            for (i, (&a, &b)) in buffer.iter().zip(prev_block.iter()).enumerate() {
-                xor_result[i] = a ^ b;
-            }
-                //Encrypt xor_result
-                let mut block = GenericArray::from(xor_result.clone());
-                let cipher = Aes256::new(&GenericArray::from(key.clone()));
-                cipher.encrypt_block(&mut block);
-                let u8_array: &[u8] = block.as_slice();
-                //append to file
-                o_file.write_all(u8_array).unwrap();
-            //append one byte specifying how many padded bytes are present in the last block (from 0 to 15)
-            let u8_bytes_read : u8 = bytes_read.try_into().unwrap();
-            let padding_byte: u8 = 16 - u8_bytes_read;
-            let slice: &[u8] = std::slice::from_ref(&padding_byte);
-            o_file.write_all(slice).unwrap();
-            //println!("{:?}", &slice);
+            encrypt_block(&mut prev_block, &iv, bytes_read, &mut buffer, &mut o_file, &key, true, &mut init);
         }
         else
         {//normal block
-            
-            if init == false
-            {
-                //initial block
-                // IV xor BLOCK_1
-                let mut xor_result: [u8; 16] = [0; 16];
-            
-                for (i, (&a, &b)) in buffer.iter().zip(iv.iter()).enumerate() {
-                    xor_result[i] = a ^ b;
-                }
-                //Encrypt xor_result
-                let mut block = GenericArray::from(xor_result.clone());
-                let cipher = Aes256::new(&GenericArray::from(key.clone()));
-                cipher.encrypt_block(&mut block);
-                //set prev_block for next rounds
-                let u8_array: &[u8] = block.as_slice();
-                prev_block.copy_from_slice(u8_array);
-                //append to file
-                o_file.write_all(u8_array).unwrap();
-                
-                init = true;
-            }
-            else 
-            {
-                // PREV CIPHER BLOCK xor CURRENT PLAIN BLOCK
-                let mut xor_result: [u8; 16] = [0; 16];
-            
-                for (i, (&a, &b)) in buffer.iter().zip(prev_block.iter()).enumerate() {
-                    xor_result[i] = a ^ b;
-                }
-                //Encrypt xor_result
-                let mut block = GenericArray::from(xor_result.clone());
-                let cipher = Aes256::new(&GenericArray::from(key.clone()));
-                cipher.encrypt_block(&mut block);
-                //set prev_block for next rounds
-                let u8_array: &[u8] = block.as_slice();
-                prev_block.copy_from_slice(u8_array);
-                //append to file
-                o_file.write_all(u8_array).unwrap();
-
-                
-            }
+            encrypt_block(&mut prev_block, &iv, bytes_read, &mut buffer, &mut o_file, &key, false, &mut init)
         }
 
     }
 }
 
-pub fn decrypt(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32]) -> u8
+pub fn decrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32]) -> u8
 {
     let mut file = File::open(ciphertext_path).unwrap();
     let mut o_file = OpenOptions::new()
@@ -164,55 +218,8 @@ pub fn decrypt(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32]) -> u8
             break;
         }
         else
-        {//normal block
-            
-            if init == false
-            {
-                //initial block
-                let mut xor_result: [u8; 16] = [0; 16];
-                //Decrypt ciphertext block 1
-                let mut block = GenericArray::from(buffer.clone());
-                let cipher = Aes256::new(&GenericArray::from(key.clone()));
-                cipher.decrypt_block(&mut block);
-                let mut decrypted_block : [u8; 16] = [0; 16];
-                decrypted_block.copy_from_slice(block.as_slice());
-                
-                for (i, (&a, &b)) in decrypted_block.iter().zip(iv.iter()).enumerate() {
-                    xor_result[i] = a ^ b;
-                }
-                //set prev_block for next rounds
-                let u8_array: &[u8] = buffer.as_slice();
-                prev_block.copy_from_slice(u8_array);
-                //append to file
-                o_file.write_all(&xor_result[..]).unwrap();
-                
-                init = true;
-            }
-            else 
-            {
-                if (file_size as i32) - total_bytes_read > 1
-                {
-                //normal block
-                let mut xor_result: [u8; 16] = [0; 16];
-                //Decrypt ciphertext block 1
-                let mut block = GenericArray::from(buffer.clone());
-                let cipher = Aes256::new(&GenericArray::from(key.clone()));
-                cipher.decrypt_block(&mut block);
-                let mut decrypted_block : [u8; 16] = [0; 16];
-                decrypted_block.copy_from_slice(block.as_slice());
-                
-                for (i, (&a, &b)) in decrypted_block.iter().zip(prev_block.iter()).enumerate() {
-                    xor_result[i] = a ^ b;
-                }
-                //set prev_block for next rounds
-                let u8_array: &[u8] = buffer.as_slice();
-                prev_block.copy_from_slice(u8_array);
-                //append to file
-                o_file.write_all(&xor_result[..]).unwrap();
-
-                }
-                
-            }
+        {
+            decrypt_block(&mut prev_block, &iv, &mut buffer, &mut o_file, &key, &mut init, file_size, total_bytes_read);
         }
 
     }

@@ -38,7 +38,7 @@ fn main() {
                 pbkdf2::<Hmac<Sha256>>(args[4].as_bytes(), b"salt", 600_000, &mut buf)
                 .expect("HMAC can be initialized with any key length");
         
-                fortress_lib::encrypt(args[2].as_str(), args[3].as_str(), buf);
+                fortress_lib::encrypt_file(args[2].as_str(), args[3].as_str(), buf);
             
         }
         else if args[1] == "decrypt"
@@ -48,7 +48,7 @@ fn main() {
             pbkdf2::<Hmac<Sha256>>(args[4].as_bytes(), b"salt", 600_000, &mut buf)
             .expect("HMAC can be initialized with any key length");
     
-            let padding_byte : u8 = fortress_lib::decrypt(args[2].as_str(), args[3].as_str(), buf);
+            let padding_byte : u8 = fortress_lib::decrypt_file(args[2].as_str(), args[3].as_str(), buf);
             fortress_lib::depad(args[2].as_str(), padding_byte);
     
         }
