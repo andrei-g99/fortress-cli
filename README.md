@@ -5,7 +5,7 @@ Fortress is an open source file encryption command-line tool based on the AES-25
 
 It implements the Cipher Block Chaining Mode as described in the [NIST Special Publication 800-38A](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf) Section 6.2.
 
-# Version 1.0.0
+# Planning for release v1.0.0
 Features to be implemented:
 1. Integrity checks: give option to check integrity of files with checksum and signatures
 2. Progress indicator while encrypting/decrypting
@@ -15,7 +15,7 @@ Features to be implemented:
 6. Automated tests
 7. Examples and docs
 
-# Possible features
+# Possible in the future
 1. Steganography support
 2. Time based encryption (give users the option to specify a time window in which the file can be decrypted)
 3. Hardware acceleration
