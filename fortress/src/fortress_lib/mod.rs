@@ -249,18 +249,6 @@ pub fn decrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32]) 
                         decrypt_block(&mut prev_block, &iv, &mut block_buff, &mut o_file, &key, &mut init, file_size, total_bytes_read);            
                     }
             
-                    // let remainder = buffer[..bytes_read].chunks_exact(16).remainder();
-                    // let remainder_len : usize = remainder.len();
-                    // if remainder_len <= buffer.len()
-                    // {
-                    //     block_buff[..remainder.len()].copy_from_slice(remainder);
-                    //     block_buff[remainder_len..].fill(0);
-                    // }
-                    // if !remainder.is_empty() {
-                    //     // Process the remaining bytes
-                    //     decrypt_block(&mut prev_block, &iv, &mut block_buff, &mut o_file, &key, &mut init, file_size, total_bytes_read);
-            
-                    // }
         }
 
     }
