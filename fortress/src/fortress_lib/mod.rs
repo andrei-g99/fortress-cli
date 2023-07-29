@@ -7,6 +7,8 @@ use aes::cipher::{
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write, SeekFrom, Seek};
 
+const CHUNK_SIZE: usize = 64000;
+
 fn encrypt_block(prev_block: &mut [u8; 16], iv: &[u8; 16], bytes_read: usize, buffer: &mut [u8; 16], o_file: &mut File,key: &[u8; 32], last_block: bool,init: &mut bool)
 {
     if last_block
@@ -128,6 +130,7 @@ fn decrypt_block(prev_block: &mut [u8; 16], iv: &[u8; 16], buffer: &mut [u8; 16]
 
 pub fn encrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
 {
+    //Init
     let mut file = File::open(plaintext_path).unwrap();
     let mut o_file = OpenOptions::new()
     .create(true)
@@ -135,21 +138,20 @@ pub fn encrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
     .open(ciphertext_path).unwrap();
 
     let mut rng = thread_rng();
+    let mut buffer: [u8; CHUNK_SIZE] = [0; CHUNK_SIZE];
+    let mut block_buff: [u8; 16] = [0; 16];
 
-    let mut buffer: [u8; 16] = [0; 16];
     let mut rand_iv: [u8; 16] = [0; 16];
     rng.fill(&mut rand_iv);
 
     let iv: [u8; 16] = rand_iv;
- 
     let mut prev_block: [u8; 16] = [0; 16];
-
     let mut init = false;
     let mut last_block_encountered = false;
 
+    //Read chunks from file
     loop {
         let bytes_read = file.read(&mut buffer).unwrap();
-
         if bytes_read == 0
         {//EOF reached
 
@@ -164,17 +166,36 @@ pub fn encrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32])
             o_file.write_all(&iv[..]).unwrap();
             break;
         }
-        else if bytes_read < 16
-        {
-            last_block_encountered = true;
-            encrypt_block(&mut prev_block, &iv, bytes_read, &mut buffer, &mut o_file, &key, true, &mut init);
-        }
         else
-        {//normal block
-            encrypt_block(&mut prev_block, &iv, bytes_read, &mut buffer, &mut o_file, &key, false, &mut init)
+        {
+
+        // Iterate over 16-byte chunks using `chunks_exact` method
+
+            for chunk in buffer[..bytes_read].chunks_exact(16) {
+                // Process block
+                block_buff.copy_from_slice(chunk);
+                encrypt_block(&mut prev_block, &iv, 16, &mut block_buff, &mut o_file, &key, false, &mut init);
+    
+            }
+    
+            let remainder = buffer[..bytes_read].chunks_exact(16).remainder();
+            let remainder_len : usize = remainder.len();
+            if remainder_len <= buffer.len()
+            {
+                block_buff[..remainder.len()].copy_from_slice(remainder);
+                block_buff[remainder_len..].fill(0);
+            }
+            if !remainder.is_empty() {
+                // Process the remaining bytes
+                last_block_encountered = true;
+                encrypt_block(&mut prev_block, &iv, remainder.len(), &mut block_buff, &mut o_file, &key, true, &mut init);
+    
+            }
+
         }
 
     }
+
 }
 
 pub fn decrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32]) -> u8
@@ -203,7 +224,8 @@ pub fn decrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32]) 
     let mut iv : [u8; 16] = [0; 16];
     iv.copy_from_slice(iv_slice);
 
-    let mut buffer: [u8; 16] = [0; 16];
+    let mut buffer: [u8; CHUNK_SIZE] = [0; CHUNK_SIZE];
+    let mut block_buff: [u8; 16] = [0; 16];
  
     let mut prev_block: [u8; 16] = [0; 16];
 
@@ -219,7 +241,26 @@ pub fn decrypt_file(plaintext_path: &str, ciphertext_path: &str, key: [u8; 32]) 
         }
         else
         {
-            decrypt_block(&mut prev_block, &iv, &mut buffer, &mut o_file, &key, &mut init, file_size, total_bytes_read);
+                    // Iterate over 16-byte chunks using `chunks_exact` method
+
+                    for chunk in buffer[..bytes_read].chunks_exact(16) {
+                        // Process block
+                        block_buff.copy_from_slice(chunk);
+                        decrypt_block(&mut prev_block, &iv, &mut block_buff, &mut o_file, &key, &mut init, file_size, total_bytes_read);            
+                    }
+            
+                    // let remainder = buffer[..bytes_read].chunks_exact(16).remainder();
+                    // let remainder_len : usize = remainder.len();
+                    // if remainder_len <= buffer.len()
+                    // {
+                    //     block_buff[..remainder.len()].copy_from_slice(remainder);
+                    //     block_buff[remainder_len..].fill(0);
+                    // }
+                    // if !remainder.is_empty() {
+                    //     // Process the remaining bytes
+                    //     decrypt_block(&mut prev_block, &iv, &mut block_buff, &mut o_file, &key, &mut init, file_size, total_bytes_read);
+            
+                    // }
         }
 
     }
