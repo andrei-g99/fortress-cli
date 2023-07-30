@@ -8,7 +8,7 @@ It implements the Cipher Block Chaining Mode as described in the [NIST Special P
 # Encrypt/Decrypt a file
 To encrypt/decrypt files, the following parameters should be used when running fortress-cli:
 ```bash
-./path-to/fortress-cli <encrypt/decrypt> <filename_1> <filename_2> <passphrase>
+./path-to/fortress-cli  <encrypt/decrypt>  filename_1  filename_2  passphrase
 ```
 For file encryption: 
 - "filename_1" is the file to be encrypted
